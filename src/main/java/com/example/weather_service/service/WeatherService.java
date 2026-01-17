@@ -2,6 +2,7 @@ package com.example.weather_service.service;
 
 import com.example.weather_service.dto.WeatherResponseDto;
 import com.example.weather_service.exception.BadRequestException;
+import com.example.weather_service.model.WeatherApiResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -28,17 +29,18 @@ public class WeatherService {
         String url = String.format("%s?key=%s&q=%s", baseUrl, apiKey, city);
 
         try {
-            Map response = restTemplate.getForObject(url, Map.class);
+            WeatherApiResponse apiResponse = restTemplate.getForObject(url, WeatherApiResponse.class);
 
-            Map location = (Map) response.get("location");
-            Map current = (Map) response.get("current");
+            if (apiResponse == null) {
+                throw new BadRequestException("Weather data not available");
+            }
 
             return new WeatherResponseDto(
-                    ((Number) location.get("lat")).doubleValue(),
-                    ((Number) location.get("lon")).doubleValue(),
-                    ((Number) current.get("temp_c")).doubleValue(),
-                    ((Number) current.get("wind_kph")).doubleValue(),
-                    ((Number) current.get("humidity")).intValue()
+                    apiResponse.getLocation().getLat(),
+                    apiResponse.getLocation().getLon(),
+                    apiResponse.getCurrent().getTempC(),
+                    apiResponse.getCurrent().getWindKph(),
+                    apiResponse.getCurrent().getHumidity()
             );
 
         } catch (Exception e) {
